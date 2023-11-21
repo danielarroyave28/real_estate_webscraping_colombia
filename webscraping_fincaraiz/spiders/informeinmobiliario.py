@@ -49,9 +49,7 @@ class InformeinmobiliarioSpider(scrapy.Spider):
         property_item = WebscrapingFincaraizItem()
         slider = response.css('div.horizontalSlider___281Ls')
 
-        #area_container = response.css('div.styles__Feature-sc-f68z1s-0')
-
-        for item in slider:
+        for item in slider[:-1]:
 
             # get the titles and static data first
             property_item["nombre"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] ::text").get()
@@ -69,6 +67,7 @@ class InformeinmobiliarioSpider(scrapy.Spider):
 
             if "Cuarto Útil" in data_dict.keys():
                 data_dict["cuarto_util"] = data_dict.pop("Cuarto Útil")
+
 
             for k, v  in data_dict.items():
                 try:

@@ -65,7 +65,8 @@ ROBOTSTXT_OBEY = False
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "webscraping_fincaraiz.pipelines.NoDuplicates": 100,
-    "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 300,
+    "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 200,
+    "webscraping_fincaraiz.pipelines.SaveToMySQLPipeline":300
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
