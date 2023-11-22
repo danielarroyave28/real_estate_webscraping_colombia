@@ -1,10 +1,3 @@
-# Define your item pipelines here
-#
-# Don't forget to add your pipeline to the ITEM_PIPELINES setting
-# See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-
-
-# useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
 import mysql.connector
@@ -163,6 +156,64 @@ class SaveToMySQLPipeline:
         ## Close cursor & connection to database 
         self.cur.close()
         self.conn.close()        
+
+import sqlite3
+
+class SaveToSQLitePipeline:
+    def __init__(self):
+        # Connect to SQLite database (creates a new file if it doesn't exist)
+        self.conn = sqlite3.connect('informeinmobiliario.db')
+        self.cur = self.conn.cursor()
+
+        # Create projects table if it doesn't exist
+        self.cur.execute('''
+            CREATE TABLE IF NOT EXISTS proyectos(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT,
+                tipo TEXT,
+                ciudad TEXT,
+                barrio TEXT,
+                link VARCHAR(255),
+                precio VARCHAR(255),
+                area FLOAT,
+                entrega VARCHAR(255),
+                habitaciones VARCHAR(255),
+                cuarto_util TEXT,
+                baños VARCHAR(255),
+                parqueaderos VARCHAR(255),
+                estudio VARCHAR(255)
+            )
+        ''')
+        self.conn.commit()
+
+    def process_item(self, item, spider):
+        # Insert data into the projects table
+        self.cur.execute('''
+            INSERT INTO proyectos (
+                nombre, tipo, ciudad, barrio, link, precio, area, entrega,
+                habitaciones, cuarto_util, baños, parqueaderos, estudio
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            item['nombre'],
+            item['tipo'],
+            item['ciudad'],
+            item['barrio'],
+            item['link'],
+            item['Precio'],
+            item['Área'],
+            item['Entrega'],
+            item['Habitaciones'],
+            item['cuarto_util'],
+            item['Baños'],
+            item['Parqueaderos'],
+            item['Estudio']
+        ))
+        self.conn.commit()
+        return item
+
+    def close_spider(self, spider):
+        # Close the database connection when the spider is closed
+        self.conn.close()
 
 
 

@@ -66,7 +66,8 @@ ROBOTSTXT_OBEY = False
 ITEM_PIPELINES = {
     "webscraping_fincaraiz.pipelines.NoDuplicates": 100,
     "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 200,
-    "webscraping_fincaraiz.pipelines.SaveToMySQLPipeline":300
+  #  "webscraping_fincaraiz.pipelines.SaveToMySQLPipeline":300,
+    "webscraping_fincaraiz.pipelines.SaveToSQLitePipeline":400
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
