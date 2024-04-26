@@ -1,7 +1,6 @@
 import scrapy
-from scrapy.exceptions import CloseSpider
+from scrapy.exceptions import CloseSpider, DontCloseSpider
 from webscraping_fincaraiz.items import WebscrapingFincaraizItem
-from scrapy_splash import SplashRequest
 
 class InformeinmobiliarioSpider(scrapy.Spider):
     name = "informeinmobiliario"
@@ -12,6 +11,7 @@ class InformeinmobiliarioSpider(scrapy.Spider):
     custom_settings = {
          'FEED_EXPORT_FIELDS': ['nombre', 'tipo', 'ciudad','barrio','link','Precio','Área','Baños',
                                 'Habitaciones','Entrega','Parqueaderos','Estudio','cuarto_util'],
+         'HTTPERROR_ALLOWED_CODES': [500],
      }
 
     def start_requests(self):
@@ -23,8 +23,8 @@ class InformeinmobiliarioSpider(scrapy.Spider):
 
         if response.status == 404: 
             raise CloseSpider('Recieve 404 response')
-        
-        if len(response.css('div.styles__DetailsContainer-sc-1nn8twz-7')) == 0:
+         
+        if len(proyectos) == 0 and response.status != 500:
             raise CloseSpider('No quotes in response')
 
 
@@ -35,7 +35,6 @@ class InformeinmobiliarioSpider(scrapy.Spider):
             property_url = response.urljoin(relative_url)
 
             yield scrapy.Request(url=property_url, callback=self.parse_area_data)
-            #yield SplashRequest(url=property_url, callback=self.parse_area_data, args={'wait': 2})
 
         self.page_number += 1
 
