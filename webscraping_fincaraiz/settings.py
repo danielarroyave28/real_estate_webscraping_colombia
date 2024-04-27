@@ -52,7 +52,7 @@ ROBOTSTXT_OBEY = False
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     "webscraping_fincaraiz.middlewares.WebscrapingFincaraizDownloaderMiddleware": 543,
-#   "webscraping_fincaraiz.middlewares.ScrapeOpsFakeUserAgentMiddleware": 400
+#    "webscraping_fincaraiz.middlewares.ScrapeOpsFakeUserAgentMiddleware": 400
 }
 
 # Enable or disable extensions
@@ -64,13 +64,10 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "webscraping_fincaraiz.pipelines.NoDuplicates": 100,
-    "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 200,
-  #  "webscraping_fincaraiz.pipelines.SaveToMySQLPipeline":300,
-#     "webscraping_fincaraiz.pipelines.SaveToSQLitePipeline":400,
-#  "webscraping_fincaraiz.pipelines.SaveToPostgreSQLPipeline":400,
-#    "webscraping_fincaraiz.pipelines.SaveToSQLitePipelineSQLAlchemy":400,
-    "webscraping_fincaraiz.pipelines.SaveToSQLitePipelineUpdated":400,
+    "webscraping_fincaraiz.pipelines.NoDuplicates": 200,
+    "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 100,
+    "webscraping_fincaraiz.pipelines.SaveToPostgreSQLPipeline":400,
+#    "webscraping_fincaraiz.pipelines.SaveToSQLitePipelineUpdated":400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -99,16 +96,21 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
-SCRAPEOPS_API_KEY = "53551657-5626-42b4-a1b4-664fcd48ef7c"
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SCRAPEOPS_API_KEY = os.getenv('SCRAPEOPS_API_KEY')
 SCRAPEOPS_FAKE_USER_AGENT_ENDPOINT = "https://headers.scrapeops.io/v1/user-agents"
 SCRAPEOPS_FAKE_BROWSER_HEADER_ENDPOINT = "https://headers.scrapeops.io/v1/browser-headers"
 SCRAPEOPS_FAKE_USER_AGENT_ENABLED = True
 SCRAPEOPS_FAKE_BROWSER_HEADER_ENABLED = True
 SCRAPEOPS_NUM_RESULTS = 50
 
-FEEDS = {
-    'data_final.csv' : {'format':'csv', 'overwrite': True}
-}
+# FEEDS = {
+#     'data_final.csv' : {'format':'csv', 'overwrite': True}
+# }
 
 # settings.py
 

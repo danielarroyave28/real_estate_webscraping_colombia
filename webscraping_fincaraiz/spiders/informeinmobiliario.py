@@ -1,6 +1,8 @@
 import scrapy
 from scrapy.exceptions import CloseSpider, DontCloseSpider
 from webscraping_fincaraiz.items import WebscrapingFincaraizItem
+from datetime import datetime
+import locale
 
 class InformeinmobiliarioSpider(scrapy.Spider):
     name = "informeinmobiliario"
@@ -9,10 +11,12 @@ class InformeinmobiliarioSpider(scrapy.Spider):
     page_number = 1
 
     custom_settings = {
-         'FEED_EXPORT_FIELDS': ['nombre', 'tipo', 'ciudad','barrio','link','Precio','Área','Baños',
-                                'Habitaciones','Entrega','Parqueaderos','Estudio','cuarto_util'],
+         #'FEED_EXPORT_FIELDS': ['nombre', 'tipo', 'ciudad','barrio','link','Precio','Área','Baños',
+         #                       'Habitaciones','Entrega','Parqueaderos','Estudio','cuarto_util'],
          'HTTPERROR_ALLOWED_CODES': [500],
      }
+    
+    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
     def start_requests(self):
          yield scrapy.Request(url=self.start_urls[0], callback=self.parse)
@@ -53,9 +57,20 @@ class InformeinmobiliarioSpider(scrapy.Spider):
             # get the titles and static data first
             property_item["nombre"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] ::text").get()
             property_item["tipo"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] div ::text").getall()[1]
+            property_item["propiedad"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] div ::text").getall()[3]
             property_item["ciudad"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] div ::text").getall()[5]
             property_item["barrio"] = response.css("h1[class*='styles__Title-sc-1owo49i-2'] div ::text").getall()[-1]
             property_item["link"] = response.url
+
+            description_list = response.css("div[class*='styles__DescriptionBlock-sc-1owo49i-18'] p ::text").getall()
+
+            for ele in description_list:
+                if 'Fecha de actualización' in ele:
+                    a = ele.split(": ")[1]
+                    a = a.replace(".", "")
+                    date = datetime.strptime(a.strip(), "%d de %B %Y")
+                    property_item["website_updated"] = date.date()
+                    
 
 
             # Search for the data for each aparment offer
