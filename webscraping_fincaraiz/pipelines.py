@@ -82,7 +82,6 @@ class NoDuplicates:
         
         else:
             # If the (Nombre, Precio) pair is already seen, drop the item
-            print(self.seen_prices)       
             raise DropItem(f"Duplicate item for Nombre: {nombre} and Precio: {price}")
         
         

@@ -11,7 +11,7 @@ BOT_NAME = "webscraping_fincaraiz"
 
 SPIDER_MODULES = ["webscraping_fincaraiz.spiders"]
 NEWSPIDER_MODULE = "webscraping_fincaraiz.spiders"
-
+LOG_LEVEL = 'INFO'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "webscraping_fincaraiz (+http://www.yourdomain.com)"
