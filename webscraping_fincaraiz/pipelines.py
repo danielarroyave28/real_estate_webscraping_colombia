@@ -125,11 +125,12 @@ class SaveToPostgreSQLPipeline:
                 print(f"Updating existing project: {item['nombre']}, {item['ciudad']}, {item['barrio']}, {item['Área']}")
                 self.cur.execute('''
                     UPDATE proyectos
-                    SET tipo = %s, link = %s, precio = %s, area = %s, entrega = %s,
+                    SET tipo = %s, propiedad = %s, link = %s, precio = %s, area = %s, entrega = %s,
                         habitaciones = %s, cuarto_util = %s, baños = %s, parqueaderos = %s, estudio = %s, last_updated = %s, website_updated = %s
                     WHERE id = %s
                 ''', (
                     item['tipo'],
+                    item['propiedad'],
                     item['link'],
                     price,
                     item['Área'],
@@ -147,12 +148,13 @@ class SaveToPostgreSQLPipeline:
                 # Insert data into the projects table
                 self.cur.execute('''
                     INSERT INTO proyectos (
-                        nombre, tipo, ciudad_id, barrio_id, link, precio, area, entrega,
+                        nombre, tipo, propiedad, ciudad_id, barrio_id, link, precio, area, entrega,
                         habitaciones, cuarto_util, baños, parqueaderos, estudio, last_updated, website_updated
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (
                     item['nombre'],
                     item['tipo'],
+                    item['propiedad'],
                     ciudad_id,
                     barrio_id,
                     item['link'],
