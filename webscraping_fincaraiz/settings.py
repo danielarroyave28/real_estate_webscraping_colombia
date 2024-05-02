@@ -66,8 +66,9 @@ DOWNLOADER_MIDDLEWARES = {
 ITEM_PIPELINES = {
     "webscraping_fincaraiz.pipelines.NoDuplicates": 200,
     "webscraping_fincaraiz.pipelines.WebscrapingFincaraizPipeline": 100,
-    "webscraping_fincaraiz.pipelines.SaveToPostgreSQLPipeline":400,
+#    "webscraping_fincaraiz.pipelines.SaveToPostgreSQLPipeline":400,
 #    "webscraping_fincaraiz.pipelines.SaveToSQLitePipelineUpdated":400,
+    "webscraping_fincaraiz.pipelines.SaveToSQLitePipelineUpdatedALCHEMY":400,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

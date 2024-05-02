@@ -6,6 +6,9 @@ import psycopg2
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
 class WebscrapingFincaraizPipeline:
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
@@ -55,7 +58,7 @@ class WebscrapingFincaraizPipeline:
 
         barrio = adapter.get("barrio")
         if barrio == '':
-            adapter['barrio'] = 'sin barrio'
+            adapter['barrio'] = None
     
 
         return item
@@ -107,16 +110,16 @@ class SaveToPostgreSQLPipeline:
     def process_item(self, item, spider):
         try:
             # Get or create Ciudad and Barrio IDs
-            ciudad_id = self.get_or_create_id('ciudad', 'name', item["ciudad"])
-            barrio_id = self.get_or_create_id('barrio', 'name', item["barrio"])
+            ciudad_id = self.get_or_create_id('ciudad', 'name', item["ciudad"], ciudad_id=None)
+            barrio_id = self.get_or_create_id('barrio', 'name', item["barrio"], ciudad_id)
 
             current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
             price = float(item['Precio'].replace('$', '').replace('.', '').replace(' ', ''))
 
             self.cur.execute('''
-                SELECT id FROM proyectos WHERE nombre = %s AND precio::numeric = %s AND ciudad_id = %s AND barrio_id = %s AND area = %s
-            ''', (item['nombre'], price, ciudad_id, barrio_id, item['Área']))
+                SELECT id FROM proyectos WHERE nombre = %s AND ciudad_id = %s AND barrio_id = %s AND area = %s
+            ''', (item['nombre'], ciudad_id, barrio_id, item['Área']))
             
             existing_project_id = self.cur.fetchone()
 
@@ -195,11 +198,17 @@ class SaveToPostgreSQLPipeline:
             self.cur.close()
             self.conn.close()
 
-    def get_or_create_id(self, table, column, value):
+    def get_or_create_id(self, table, column, value, ciudad_id):
         # Get or create ID for a given value in a table
-        self.cur.execute(f'''
-            INSERT INTO {table} ({column}) VALUES (%s) ON CONFLICT DO NOTHING
-        ''', (value,))
+        if table == 'barrio':
+            self.cur.execute(f'''
+            INSERT INTO {table} ({column}) VALUES (%s, %s) ON CONFLICT DO NOTHING
+        ''', (value, ciudad_id))
+            
+        else: 
+            self.cur.execute(f'''
+                INSERT INTO {table} ({column}) VALUES (%s) ON CONFLICT DO NOTHING
+            ''', (value,))
         self.cur.execute(f'''
             SELECT id FROM {table} WHERE {column} = %s
         ''', (value,))
@@ -208,6 +217,7 @@ class SaveToPostgreSQLPipeline:
 
 
 class SaveToSQLitePipelineUpdated:
+    
     def __init__(self):
         # Connect to SQLite database (creates a new file if it doesn't exist)
         self.conn = sqlite3.connect('/Users/Usuario/Documents/real_estate_webscraping_api/instance/informeinmobiliario.db')
@@ -221,10 +231,10 @@ class SaveToSQLitePipelineUpdated:
 
     def process_item(self, item, spider):
         # Get or create Ciudad and Barrio IDs
-        ciudad_id = self.get_or_create_id('ciudad', 'name', item["ciudad"])
+        ciudad_id = self.get_or_create_id('ciudad', 'name', item["ciudad"], ciudad_id=None)
  
-        barrio_id = self.get_or_create_id('barrio', 'name', item["barrio"])
-        
+        barrio_id = self.get_or_create_id('barrio', 'name', item["barrio"], ciudad_id)
+
 
         current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -303,14 +313,170 @@ class SaveToSQLitePipelineUpdated:
         self.conn.commit()
         self.conn.close()
 
-    def get_or_create_id(self, table, column, value):
+    def get_or_create_id(self, table, column, value, ciudad_id):
         # Get or create ID for a given value in a table
         if value != '':
-            self.cur.execute(f'''
-                INSERT OR IGNORE INTO {table} ({column}) VALUES (?)
-            ''', (value,))  # inserts the barrio/ciudad name into its respective table
+            if table == 'barrio':
+                self.cur.execute(f'''
+                INSERT INTO {table} ({column}, ciudad_id) VALUES (?, ?)
+            ''', (value, ciudad_id))
+                
+            else: 
+                self.cur.execute(f'''
+                    INSERT OR IGNORE INTO {table} ({column}) VALUES (?)
+                ''', (value,))  # inserts the barrio/ciudad name into its respective table
+
         self.cur.execute(f'''
             SELECT id FROM {table} WHERE {column} = ?
         ''', (value,))
         result = self.cur.fetchone()
         return result[0] if result else None  # grabs the id
+
+from datetime import datetime, timezone
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Date
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class Ciudad(Base):
+    __tablename__ = 'ciudad'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True)
+
+    proyectos = relationship('Proyecto', back_populates='ciudad')
+    barrio = relationship('Barrio', back_populates='ciudad')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.name
+        }
+
+class Barrio(Base):
+    __tablename__ = 'barrio'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=True)
+
+    ciudad_id = Column(Integer, ForeignKey('ciudad.id'), nullable=True)
+    ciudad = relationship('Ciudad', back_populates='barrio')
+
+    proyectos = relationship('Proyecto', back_populates='barrio')
+
+class Proyecto(Base):
+    __tablename__ = 'proyectos'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nombre = Column(String)
+    tipo = Column(String)
+    propiedad = Column(String)
+    link = Column(String)
+    precio = Column(Float)
+    area = Column(Float)
+    entrega = Column(String)
+    habitaciones = Column(Integer)
+    cuarto_util = Column(String)
+    baños = Column(Integer)
+    parqueaderos = Column(Integer)
+    estudio = Column(Integer)
+    last_updated = Column(Date)
+    website_updated = Column(Date)
+
+    ciudad_id = Column(Integer, ForeignKey('ciudad.id'), nullable=True)
+    ciudad = relationship('Ciudad', back_populates='proyectos')
+
+    barrio_id = Column(Integer, ForeignKey('barrio.id'), nullable=True)
+    barrio = relationship('Barrio', back_populates='proyectos')
+
+class SaveToSQLitePipelineUpdatedALCHEMY:
+    def __init__(self):
+        #db_path = '/Users/Usuario/Documents/real_estate_webscraping_api/instance/informeinmobiliario.db'
+        POSTGRES_URI = f"postgresql://postgres:{os.getenv('PASSWORD')}@{os.getenv('HOST')}/daniel"
+        engine = create_engine(POSTGRES_URI)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+
+    def process_item(self, item, spider):
+        ciudad_name = item["ciudad"]
+        barrio_name = item["barrio"]
+
+        
+        
+        try:
+            ciudad = self.session.query(Ciudad).filter_by(name=ciudad_name).first()
+            if not ciudad:
+                ciudad = Ciudad(name=ciudad_name)
+                self.session.add(ciudad)
+                self.session.commit()
+
+            barrio = self.session.query(Barrio).filter_by(name=barrio_name).first()
+            if not barrio:
+                barrio = Barrio(name=barrio_name, ciudad_id=ciudad.id)
+                self.session.add(barrio)
+                self.session.commit()
+
+            current_datetime = datetime.now(timezone.utc)
+
+            price = float(item['Precio'].replace('$', '').replace('.', '').replace(' ', ''))
+
+            proyecto = self.session.query(Proyecto).filter_by(nombre=item['nombre'], ciudad_id=ciudad.id, barrio_id=barrio.id, area=item['Área']).first()
+
+            if proyecto:
+                # Project already exists, update the existing row
+                print(f"Updating existing project: {item['nombre']}, {ciudad_name}, {barrio_name}, {item['Área']}")
+
+                try:
+                    website_update = datetime.strptime(item["website_updated"],'%Y-%m-%d').date()
+
+                except:
+                    website_update = None
+
+                proyecto.tipo = item['tipo']
+                proyecto.propiedad = item['propiedad']
+                proyecto.link = item['link']
+                proyecto.precio = price
+                proyecto.area = item['Área']
+                proyecto.entrega = item['Entrega']
+                proyecto.habitaciones = item['Habitaciones']
+                proyecto.cuarto_util = item['cuarto_util']
+                proyecto.baños = item['Baños']
+                proyecto.parqueaderos = item['Parqueaderos']
+                proyecto.estudio = item['Estudio']
+                proyecto.last_updated = current_datetime.date()
+                proyecto.website_updated = website_update
+            else:
+                # Insert data into the projects table
+                try:
+                    website_update = datetime.strptime(item["website_updated"],'%Y-%m-%d').date()
+
+                except:
+                    website_update = None
+                proyecto = Proyecto(
+                    nombre=item['nombre'],
+                    tipo=item['tipo'],
+                    propiedad=item['propiedad'],
+                    ciudad_id=ciudad.id,
+                    barrio_id=barrio.id,
+                    link=item['link'],
+                    precio=price,
+                    area=item['Área'],
+                    entrega=item['Entrega'],
+                    habitaciones=item['Habitaciones'],
+                    cuarto_util=item['cuarto_util'],
+                    baños=item['Baños'],
+                    parqueaderos=item['Parqueaderos'],
+                    estudio=item['Estudio'],
+                    last_updated=current_datetime.date(),
+                    website_updated=website_update
+                )
+                self.session.add(proyecto)
+
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            print(f"error processing item {e}")
+        
+        return item
+
+    def close_spider(self, spider):
+        self.session.close()
