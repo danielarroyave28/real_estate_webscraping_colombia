@@ -57,8 +57,8 @@ class WebscrapingFincaraizPipeline:
         # Barrio
 
         barrio = adapter.get("barrio")
-        if barrio == '':
-            adapter['barrio'] = None
+        if barrio == '' or barrio == ' ':
+            adapter['barrio'] = 'Sin-Barrio'
     
 
         return item

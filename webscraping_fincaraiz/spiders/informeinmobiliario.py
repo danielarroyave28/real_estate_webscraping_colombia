@@ -64,33 +64,36 @@ class InformeinmobiliarioSpider(scrapy.Spider):
 
             description_list = response.css("div[class*='styles__DescriptionBlock-sc-1owo49i-18'] p ::text").getall()
 
-            for ele in description_list:
-                if 'Fecha de actualización' in ele:
-                    a = ele.split(": ")[1]
-                    a = a.replace(".", "")
-                    date = datetime.strptime(a.strip(), "%d de %B %Y")
-                    property_item["website_updated"] = date.date()
+            if property_item["propiedad"] in ['Apartamentos', 'Casas', 'Apartaestudios']:
+                for ele in description_list:
+                    if 'Fecha de actualización' in ele:
+                        a = ele.split(": ")[1]
+                        a = a.replace(".", "")
+                        date = datetime.strptime(a.strip(), "%d de %B %Y")
+                        property_item["website_updated"] = date.date()
+                        
+
+                # Search for the data for each aparment offer
+
+                data_list = item.css('div > div ::text').getall()
+
+                data_dict = {data_list[i]: data_list[i + 1] for i in range(0, len(data_list), 2)}
+
+                if "Cuarto Útil" in data_dict.keys():
+                    data_dict["cuarto_util"] = data_dict.pop("Cuarto Útil")
+
+
+                for k, v  in data_dict.items():
+                    try:
+                        property_item[k] = v
                     
+                    except KeyError:
+                        print("key not found for this column")
 
-
-            # Search for the data for each aparment offer
-
-            data_list = item.css('div > div ::text').getall()
-
-            data_dict = {data_list[i]: data_list[i + 1] for i in range(0, len(data_list), 2)}
-
-            if "Cuarto Útil" in data_dict.keys():
-                data_dict["cuarto_util"] = data_dict.pop("Cuarto Útil")
-
-
-            for k, v  in data_dict.items():
-                try:
-                    property_item[k] = v
-                
-                except KeyError:
-                    print("key not found for this column")
-
-            yield property_item
+                yield property_item
+            
+            else:
+                continue
 
 
         
